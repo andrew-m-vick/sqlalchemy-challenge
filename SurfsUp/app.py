@@ -117,21 +117,17 @@ def start_date(start):
     except ValueError:
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
 
-    # Filter data for the given start date
-    filtered_data = [row for row in measurement_data if row[0] == most_active_station and dt.datetime.strptime(row[2], '%Y-%m-%d').date() >= start_date]
+    # Query for temperature data across all stations
+    results = session.query(
+        func.min(Measurement.tobs),
+        func.avg(Measurement.tobs),
+        func.max(Measurement.tobs)
+    ).filter(Measurement.date >= start_date).all()
 
-    # Extract temperature values
-    tobs_values = [row[1] for row in filtered_data]
-
-    if not tobs_values:
+    if not results:
         return jsonify({"error": "No temperature data found for the given start date."}), 404
 
-    # Calculate and return temperature statistics
-    temp_stats = {
-        "TMIN": min(tobs_values),
-        "TAVG": sum(tobs_values) / len(tobs_values),
-        "TMAX": max(tobs_values),
-    }
+    temp_stats = {"TMIN": results[0][0], "TAVG": results[0][1], "TMAX": results[0][2]}
     return jsonify(temp_stats)
 
 
@@ -144,21 +140,17 @@ def start_end_date(start, end):
     except ValueError:
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
 
-    # Filter data for the given date range
-    filtered_data = [row for row in measurement_data if row[0] == most_active_station and start_date <= dt.datetime.strptime(row[2], '%Y-%m-%d').date() <= end_date]
-    
-    # Extract temperature values
-    tobs_values = [row[1] for row in filtered_data]
+    # Query for temperature data across all stations
+    results = session.query(
+        func.min(Measurement.tobs),
+        func.avg(Measurement.tobs),
+        func.max(Measurement.tobs)
+    ).filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
 
-    if not tobs_values:
+    if not results:
         return jsonify({"error": "No temperature data found for the given date range."}), 404
 
-    # Calculate and return temperature statistics
-    temp_stats = {
-        "TMIN": min(tobs_values),
-        "TAVG": sum(tobs_values) / len(tobs_values),
-        "TMAX": max(tobs_values),
-    }
+    temp_stats = {"TMIN": results[0][0], "TAVG": results[0][1], "TMAX": results[0][2]}
     return jsonify(temp_stats)
 
 
